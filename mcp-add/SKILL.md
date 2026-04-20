@@ -1,17 +1,17 @@
 ---
 name: mcp-add
-description: Add or configure an MCP (Model Context Protocol) server for Swarmctl — picking the right scope (global/workspace/project), wiring secrets via ${secret:NAME} placeholders, and verifying the reconciled .mcp.json. Use this skill whenever the user asks to add, register, configure, install, wire, enable, or rotate an MCP server, or asks how to store tokens/API keys that an MCP server needs. Keywords, both RU and EN are welcome — mcp, MCP, Model Context Protocol, сервер, добавить mcp, подключить mcp, настроить mcp, токен, secret, секрет, env, переменная окружения, rotate token, api key, github token.
+description: Add or configure an MCP (Model Context Protocol) server for flockctl — picking the right scope (global/workspace/project), wiring secrets via ${secret:NAME} placeholders, and verifying the reconciled .mcp.json. Use this skill whenever the user asks to add, register, configure, install, wire, enable, or rotate an MCP server, or asks how to store tokens/API keys that an MCP server needs. Keywords, both RU and EN are welcome — mcp, MCP, Model Context Protocol, сервер, добавить mcp, подключить mcp, настроить mcp, токен, secret, секрет, env, переменная окружения, rotate token, api key, github token.
 ---
 
 # Adding an MCP Server (with secrets)
 
-Swarmctl lets you declare MCP servers at three scopes — **global**, **workspace**, and **project** — and reference secret values by placeholder so real tokens never land in committed config. This skill is the canonical playbook.
+flockctl lets you declare MCP servers at three scopes — **global**, **workspace**, and **project** — and reference secret values by placeholder so real tokens never land in committed config. This skill is the canonical playbook.
 
 ## The big picture
 
 1. Server config (`command`, `args`, `env`) is stored as `.flockctl/mcp/{name}.json` at workspace/project scope, or in `${FLOCKCTL_HOME}/mcp/{name}.json` at global scope. **These files are committed to git.**
-2. Secrets live in the Swarmctl SQLite DB, AES-256-GCM-encrypted with a master key at `${FLOCKCTL_HOME}/secret.key` (mode 600). They never sit in the repo.
-3. At reconcile time, Swarmctl walks the scope chain (project → workspace → global), resolves every `${secret:NAME}` in env values, and writes a ready-to-use `.mcp.json` at the workspace/project root. `.mcp.json` is gitignored.
+2. Secrets live in the flockctl SQLite DB, AES-256-GCM-encrypted with a master key at `${FLOCKCTL_HOME}/secret.key` (mode 600). They never sit in the repo.
+3. At reconcile time, flockctl walks the scope chain (project → workspace → global), resolves every `${secret:NAME}` in env values, and writes a ready-to-use `.mcp.json` at the workspace/project root. `.mcp.json` is gitignored.
 
 ## Step 1: Decide the scope
 
@@ -79,7 +79,7 @@ The POST kicks off an async reconcile. Check the generated file:
 cat <workspace-or-project>/.mcp.json
 ```
 
-You should see the **resolved** value inline. If you see the placeholder verbatim, the secret is missing at every scope — the server will start with an empty/broken env. The `.flockctl/mcp-state.json` manifest lists servers Swarmctl knows about.
+You should see the **resolved** value inline. If you see the placeholder verbatim, the secret is missing at every scope — the server will start with an empty/broken env. The `.flockctl/mcp-state.json` manifest lists servers flockctl knows about.
 
 If Claude Code is running, restart it so it picks up the new `.mcp.json`.
 
