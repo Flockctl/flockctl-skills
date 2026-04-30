@@ -92,6 +92,41 @@ If Claude Code is running, restart it so it picks up the new `.mcp.json`.
 
 ## Deleting / rotating
 
+### Deleting an MCP server
+
+`.mcp.json` is **a generated artifact, not the source of truth.** Deleting it by hand does nothing: the next reconcile (triggered by any MCP create/update/delete, or at task/agent startup) regenerates it from the per-scope source files. The same goes for the UI — it lists servers from those source files, so a deleted `.mcp.json` won't make a server disappear from the interface.
+
+The source of truth lives in committed JSON files, one per scope:
+
+| Scope | File |
+|-|-|
+| global | `${FLOCKCTL_HOME}/mcp/{name}.json` (defaults to `~/flockctl/mcp/{name}.json`) |
+| workspace | `<workspace>/.flockctl/mcp/{name}.json` |
+| project | `<project>/.flockctl/mcp/{name}.json` |
+
+To actually remove a server, do **one** of:
+
+- Call the API (preferred — triggers reconcile, updates `.flockctl/mcp-state.json`):
+
+  ```bash
+  # Global
+  curl -X DELETE http://localhost:8787/mcp/global/<name>
+
+  # Workspace
+  curl -X DELETE http://localhost:8787/mcp/workspaces/<wid>/servers/<name>
+
+  # Project
+  curl -X DELETE http://localhost:8787/mcp/workspaces/<wid>/projects/<pid>/servers/<name>
+  ```
+
+- Or delete the source JSON file directly from the right scope dir, then trigger a reconcile (any subsequent MCP API call works, or restart the daemon).
+
+Do **not** "fix" stale entries by editing `.mcp.json` — your edit will be overwritten the next time the reconciler runs.
+
+If you want to keep the server defined at one scope but suppress it in a narrower scope, use the **disable** mechanism instead (`PUT /mcp/workspaces/:id/disabled-mcp` or `PUT /mcp/projects/:pid/disabled-mcp` with `{name, level}`) — that records a disable entry in the scope's config so the server is filtered out at reconcile time without removing it from the source scope.
+
+### Rotating / deleting secrets
+
 - Rotating: re-POST to the same endpoint with a new `value`. Upsert replaces the encrypted blob and kicks a reconcile.
 - Deleting a secret while an MCP config still references it leaves the placeholder unresolved — a warning is logged and the placeholder is kept verbatim in `.mcp.json`. Fix by removing the reference or recreating the secret.
 - Deleting a workspace/project cascades: its scope-bound secrets are wiped from the DB automatically.
